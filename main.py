@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
+import plotly.express as px
 
 
 st.set_page_config(
@@ -36,7 +36,6 @@ elif option == "Budgeting":
     with colAnnualSal:
         salary = st.number_input("Enter your annual salary($): ", min_value=0.0, format='%f')
     with colTax:
-        #tax_rate = st.number_input("Enter your tax rate(%): ", min_value=0.0, format='%f')
         tax_rate = st.radio('What is your tax rate %?',
                             [10, 12, 22, 24, 32, 35, 37])
 
@@ -99,6 +98,31 @@ elif option == "Budgeting":
         st.write(f"You have a monthly surplus of $ :green[{surplus_or_deficit}]")
     elif surplus_or_deficit < 0:
         st.write(f"You have a monthly deficit of $ :red[{surplus_or_deficit}]")
+
+    graphCol1, graphCol2 = st.columns(2)
+
+    with graphCol1:
+        expense_labels = ["Rent", "Utilities", "Bills", "Groceries", "Entertainment", "Transportation", "Buffer"]
+        expense_values = [monthly_rent, monthly_utilities, monthly_bills, weekly_groceries, weekly_entertainment,
+                          weekly_transport, weekly_buffer]
+
+        expense_breakdown = px.pie(
+            names=expense_labels,
+            values=expense_values,
+            title="Monthly Expenses Breakdown"
+        )
+
+        st.plotly_chart(expense_breakdown)
+
+    with graphCol2:
+        remaining_funds = px.pie(
+            names=["Remaining Funds", "Expenses"],
+            values=[surplus_or_deficit, monthly_expenses],
+            color_discrete_sequence=["red", "green"],
+            title="Remaining Funds Breakdown"
+        )
+
+        st.plotly_chart(remaining_funds)
 
 
 elif option == "Investing":
