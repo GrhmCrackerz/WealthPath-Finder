@@ -31,6 +31,7 @@ elif option == "Budgeting":
 
     st.header("**Monthly Income**")
     st.subheader("Salary")
+    # Consider adding a 3rd column to include a table showing the tax brackets
     colAnnualSal, colTax = st.columns(2)
 
     with colAnnualSal:
@@ -116,9 +117,9 @@ elif option == "Budgeting":
 
     with graphCol2:
         remaining_funds = px.pie(
-            names=["Remaining Funds", "Expenses"],
-            values=[surplus_or_deficit, monthly_expenses],
-            color_discrete_sequence=["red", "green"],
+            names=["Expenses", "Remaining Funds", "Savings"],
+            values=[surplus_or_deficit, monthly_expenses, monthly_savings],
+            color_discrete_sequence=["red", "green", "blue"],
             title="Remaining Funds Breakdown"
         )
 
@@ -129,4 +130,27 @@ elif option == "Investing":
     st.text("Here we are going to learn the basics about investing")
 
 elif option == "Debt Management":
-    st.text("Here we are going to learn the basics on debt management")
+    st.title("Debt Management")
+    st.text("Track and Manage Your Debts")
+
+    if st.button("Add Debt"):
+        debt_name = st.text_input("Debt Name", "")
+        interest_rate = st.number_input("Interest Rate (%)", value=0.0, min_value=0.0)
+        min_monthly_payment = st.number_input("Minimum Monthly Payment $", value=0.0, min_value=0.0)
+        loan_length = st.number_input("Loan Length in Months", value=0.0, min_value=0.0)
+
+        if "debts" not in st.session_state:
+            st.session_state.debts = pd.DataFrame(columns=["Debt Name", "Interest Rate",
+                                                           "Minimum Monthly Payment", "Loan Length"])
+
+        if debt_name:
+            st.session_state.debts = st.session_state.debts.append(
+                {"Debt Name": debt_name, "Interest Rate (%)": interest_rate,
+                 "Minimum Monthly Payment ($)": min_monthly_payment, "Loan Length (months)": loan_length}
+                , ignore_index=True)
+
+    st.write("Your Debts:")
+    st.write(st.session_state.debts)
+
+    total_debt = st.session_state.debts["Minimum Monthly Payment $"].sum()
+    st.write(f"Total Debt Amount: ${total_debt:.2f}")
