@@ -1,9 +1,9 @@
+import math
 import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
 
 st.set_page_config(
     page_title="My Personal Finance App!",
@@ -15,10 +15,48 @@ st.set_page_config(
     }
 )
 
-
 # Add a sidebar with the selectbox
-option = st.sidebar.selectbox("Select an Option:", ["Home", "Budgeting", "Investing", "Debt"])
+option = st.sidebar.selectbox("Select an Option:", ["Home", "Budgeting", "Investing", "Debt Management"])
 
+
+def calculate_time_to_pay_off(initial_debt, interest_rate, monthly_payment):
+    initial_debt = float(initial_debt)
+    interest_rate = float(interest_rate)
+    monthly_payment = float(monthly_payment)
+
+    if monthly_payment <= 0:
+        return -1  # Indicate that the debt will never be paid off with the current payment
+
+    if interest_rate <= 0:
+        return int(initial_debt / monthly_payment)
+
+    monthly_interest_rate = interest_rate / 12 / 100
+
+    if initial_debt * monthly_interest_rate >= monthly_payment:
+        return -1  # Indicate that the debt will never be paid off with the current payment
+
+    n = -math.log(1 - (initial_debt * monthly_interest_rate) / monthly_payment) / math.log(1 + monthly_interest_rate)
+    return int(n)
+
+def calculate_time_to_pay_off_with_extra_payment(initial_debt, interest_rate, monthly_payment, extra_payment):
+    initial_debt = float(initial_debt)
+    interest_rate = float(interest_rate)
+    monthly_payment = float(monthly_payment)
+    extra_payment = float(extra_payment)
+
+    if monthly_payment <= 0:
+        return -1  # Indicate that the debt will never be paid off with the current payment
+
+    if interest_rate <= 0:
+        return int(initial_debt / (monthly_payment + extra_payment))
+
+    monthly_interest_rate = interest_rate / 12 / 100
+
+    if initial_debt * monthly_interest_rate >= (monthly_payment + extra_payment):
+        return -1  # Indicate that the debt will never be paid off with the current payment
+
+    n = -math.log(1 - (initial_debt * monthly_interest_rate) / (monthly_payment + extra_payment)) / math.log(1 + monthly_interest_rate)
+    return int(n)
 
 if option == "Home":
     st.title("My Personal Finance App!")
@@ -40,13 +78,14 @@ elif option == "Budgeting":
         tax_rate = st.radio('What is your tax rate %?',
                             [10, 12, 22, 24, 32, 35, 37])
 
-    tax_rate = tax_rate /100.0
+    tax_rate = tax_rate / 100.0
     salary_after_taxes = salary * (1 - tax_rate)
     monthly_takehome_salary = round(salary_after_taxes / 12.0, 2)
 
     st.write(
         "Your gross yearly income is", salary, ","
-        " after taxes your net yearly income is", salary_after_taxes, " and your "
+                                               " after taxes your net yearly income is", salary_after_taxes,
+        " and your "
         "monthly net income is $", monthly_takehome_salary)
 
     st.header("**Monthly Expenses**")
@@ -133,24 +172,112 @@ elif option == "Debt Management":
     st.title("Debt Management")
     st.text("Track and Manage Your Debts")
 
-    if st.button("Add Debt"):
-        debt_name = st.text_input("Debt Name", "")
+    # Initialize debts and total_debt if not already initialized
+    if "debts" not in st.session_state:
+        st.session_state.debts = []
+
+    if "total_debt" not in st.session_state:
+        st.session_state.total_debt = 0.0
+
+    # Initialize a dictionary to store the total amount owed for each specific form of debt
+    if "total_amounts" not in st.session_state:
+        st.session_state.total_amounts = {}
+
+    with st.form("debt_form"):
+        debt_name = st.text_input("Debt Name")
         interest_rate = st.number_input("Interest Rate (%)", value=0.0, min_value=0.0)
-        min_monthly_payment = st.number_input("Minimum Monthly Payment $", value=0.0, min_value=0.0)
-        loan_length = st.number_input("Loan Length in Months", value=0.0, min_value=0.0)
+        initial_debt = st.number_input("Initial Debt Amount ($)", value=0.0, min_value=0.0)
+        min_monthly_payment = st.number_input("Minimum Monthly Payment ($)", value=0.0, min_value=0.0)
+        loan_length = st.number_input("Loan Length in Months", value=0, min_value=0)
 
-        if "debts" not in st.session_state:
-            st.session_state.debts = pd.DataFrame(columns=["Debt Name", "Interest Rate",
-                                                           "Minimum Monthly Payment", "Loan Length"])
+        add_debt = st.form_submit_button("Add Debt")
 
-        if debt_name:
-            st.session_state.debts = st.session_state.debts.append(
-                {"Debt Name": debt_name, "Interest Rate (%)": interest_rate,
-                 "Minimum Monthly Payment ($)": min_monthly_payment, "Loan Length (months)": loan_length}
-                , ignore_index=True)
+        if add_debt:
+            if debt_name:
+                new_debt = {
+                    "Debt Name": debt_name,
+                    "Interest Rate": interest_rate,
+                    "Minimum Monthly Payment": min_monthly_payment,
+                    "Loan Length": loan_length,
+                    "Initial Debt": initial_debt
+                }
+                st.session_state.debts.append(new_debt)
 
-    st.write("Your Debts:")
-    st.write(st.session_state.debts)
+                # Update the total amount owed for this specific form of debt
+                if debt_name in st.session_state.total_amounts:
+                    st.session_state.total_amounts[debt_name] += initial_debt
+                else:
+                    st.session_state.total_amounts[debt_name] = initial_debt
 
-    total_debt = st.session_state.debts["Minimum Monthly Payment $"].sum()
-    st.write(f"Total Debt Amount: ${total_debt:.2f}")
+    st.subheader("Your Debts:")
+    for debt in st.session_state.debts:
+        st.write("Debt name:", debt["Debt Name"])
+        st.write("Initial Debt: $", debt["Initial Debt"])
+        st.write("Interest Rate: %", debt["Interest Rate"])
+        st.write("Loan Length (in months):", debt["Loan Length"])
+        st.write("Minimum Monthly Payments: $", debt["Minimum Monthly Payment"])
+
+    st.write("Total Amount Owed for Each Form of Debt:")
+    for debt in st.session_state.debts:
+        debt_name = debt["Debt Name"]
+        total_amount = debt["Initial Debt"]
+
+        st.write(f"{debt_name}: ${total_amount:.2f}")
+
+        # Calculate time to pay off the debt
+        time_to_pay_off = calculate_time_to_pay_off(
+            total_amount, debt["Interest Rate"], debt["Minimum Monthly Payment"]
+        )
+        if time_to_pay_off < 0:
+            st.write(f":red[You will not be able to pay off the debt at this rate, consider increasing monthly payments]")
+        else:
+            st.write(f"Time to Pay Off: :green[{time_to_pay_off} months]")
+
+    # Calculate the total debt amount across all forms of debt
+    st.session_state.total_debt = sum(st.session_state.total_amounts.values())
+    st.subheader(f"Total Debt Amount: $:red[{st.session_state.total_debt:.2f}]")
+
+
+
+    st.header("Additional Payments to Pay Off Debts Faster")
+    with st.form("extra_payment_form"):
+        extra_payment = st.number_input("Enter Extra Payment Amount $", value=0.0, min_value=0.0)
+        add_extra_payment = st.form_submit_button("Add Extra Payment")
+
+        if add_extra_payment:
+            if extra_payment > 0:
+                st.session_state.total_debt -= extra_payment
+                st.write(f"New Total Debt Amount After Extra Payment: ${st.session_state.total_debt:.2f}")
+
+                # Update the time frame after the extra payment
+                st.subheader("Updated Time Frames:")
+                total_payment_amount = 0  # Initialize total payment amount
+
+                for debt in st.session_state.debts:
+                    debt_name = debt["Debt Name"]
+                    initial_debt = debt["Initial Debt"]
+
+                    # Calculate time to pay off the debt with the updated total debt amount
+                    time_to_pay_off_updated = calculate_time_to_pay_off_with_extra_payment(
+                        initial_debt, debt["Interest Rate"], debt["Minimum Monthly Payment"], extra_payment
+                    )
+                    if time_to_pay_off_updated < 0:
+                        st.write(
+                            f"{debt_name}: :red[You will not be able to pay off the debt at this rate, consider increasing monthly payments]")
+                    else:
+                        st.write(f"{debt_name}: Pay Off in :green[{time_to_pay_off_updated} months]")
+
+                    # Update the total payment amount
+                    total_payment_amount += debt["Minimum Monthly Payment"]  # Add monthly payment
+
+                total_payment_amount += extra_payment  # Add extra payment
+
+                # Update the time frame for the total debt amount
+                st.subheader("Total Debt Pay Off:")
+                total_time_to_pay_off = calculate_time_to_pay_off(
+                    st.session_state.total_debt, 0, total_payment_amount
+                )
+                st.write(f"Total Debt Pay Off in :green[{total_time_to_pay_off} months]")
+
+
+
