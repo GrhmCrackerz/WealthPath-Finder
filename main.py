@@ -9,16 +9,16 @@ import plotly.graph_objects as go
 from alpha_vantage.timeseries import TimeSeries
 
 st.set_page_config(
-    page_title="My Personal Finance App!",
+    page_title="WealthPath Finder",
     layout="wide",
     menu_items={
         'Get Help': 'https://docs.streamlit.io/',
         'Report a bug': 'https://www.google.com/',
-        'About': '# Welcome to HCI. Developed by Rodney Graham'
+        'About': '# Welcome to WealthPath Finder. Developed by Rodney Graham'
     }
 )
 
-# Add a sidebar with the selectbox
+# Add a sidebar with the select box
 option = st.sidebar.selectbox("Select an Option:", ["Home", "Budgeting", "Investing", "Debt Management"])
 
 
@@ -80,9 +80,20 @@ def calculate_debt_over_time(initial_debt, interest_rate, monthly_payment, max_m
 
 
 if option == "Home":
-    st.title("My Personal Finance App!")
+    st.title("WealthPath Finder")
     st.subheader("Created by Rodney Graham")
-    st.text("Welcome to Simple Personal Finance")
+    st.text("Welcome to WealthPath Finder")
+
+    st.subheader("Learn the Basics of Financial Literacy")
+    st.text("Watch this short video to understand some fundamental concepts of financial literacy. "
+            "Video by NYU StudentLink")
+
+    col1, col2, col3 = st.columns([1, 4, 1])
+
+    with col2:
+        financial_literacy_video_url = 'https://youtu.be/swXHv0khiWY?si=oiZ7ItY5BSBm5jY2'
+        st.video(financial_literacy_video_url)
+
 
 elif option == "Budgeting":
     st.title("Budget")
@@ -190,6 +201,14 @@ elif option == "Investing":
     st.title("Investing")
     st.text("Explore Stocks, Index Funds, and ETFs for Investing")
 
+    st.subheader("Learn the Importance of Investing!")
+
+    col1, col2, col3 = st.columns([1, 4, 1])
+
+    with col2:
+        importance_of_investing_video_url = 'https://youtu.be/x7msE3tx8QI?si=1y72OHGfLPGsSrfy'
+        st.video(importance_of_investing_video_url)
+
     # Load API key and create TimeSeries object
     file = open("api_key.json")
     json_file = json.load(file)
@@ -239,6 +258,7 @@ elif option == "Debt Management":
         loan_length = st.number_input("Loan Length in Months", value=0, min_value=0)
 
         add_debt = st.form_submit_button("Add Debt")
+        line_color = st.color_picker("Pick a Color for the Debt Line", '#00f900')  # Default color as an example
 
         if add_debt:
             if debt_name:
@@ -249,6 +269,7 @@ elif option == "Debt Management":
                     "Loan Length": loan_length,
                     "Initial Debt": initial_debt
                 }
+                new_debt['Line Color'] = line_color
                 st.session_state.debts.append(new_debt)
 
                 # Update the total amount owed for this specific form of debt
@@ -289,15 +310,18 @@ elif option == "Debt Management":
         st.subheader("Debt Repayment Progress Over Time")
 
         debt_progress_data = {}  # Dictionary to hold progress data for each debt
+        debt_colors = {}
 
         for debt in st.session_state.debts:
             debt_name = debt["Debt Name"]
             initial_debt = debt["Initial Debt"]
             interest_rate = debt["Interest Rate"]
             monthly_payment = debt["Minimum Monthly Payment"]
+            line_color = debt["Line Color"]
 
             monthly_progress = calculate_debt_over_time(initial_debt, interest_rate, monthly_payment)
             debt_progress_data[debt_name] = monthly_progress
+            debt_colors[debt_name] = line_color
 
         # Plotting all debts on the same graph
         fig = go.Figure()
@@ -307,6 +331,7 @@ elif option == "Debt Management":
                 y=progress,
                 mode='lines',
                 name=debt_name,
+                line=dict(color=debt_colors[debt_name]),
                 hovertemplate='Month: %{x}<br>Remaining Debt: $%{y:.2f}<extra></extra>'  # Custom hover label
             ))
 
@@ -318,7 +343,6 @@ elif option == "Debt Management":
         )
 
         st.plotly_chart(fig)
-
 
     st.header("Additional Payments to Pay Off Debts Faster")
     with st.form("extra_payment_form"):
@@ -359,6 +383,7 @@ elif option == "Debt Management":
                 total_time_to_pay_off = calculate_time_to_pay_off(
                     st.session_state.total_debt, 0, total_payment_amount
                 )
+                st.write(f"It will take {total_time_to_pay_off} months to pay everything with the additional payments!")
 
 
 
