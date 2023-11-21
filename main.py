@@ -135,9 +135,9 @@ elif option == "Budgeting":
     surplus_or_deficit = monthly_takehome_salary - (monthly_expenses + weekly_expenses + monthly_savings)
 
     if surplus_or_deficit > 0:
-        st.write(f"You have a monthly surplus of $ :green[{surplus_or_deficit}]")
+        st.write(f"You have a monthly surplus of $ :green[{surplus_or_deficit:.2f}]")
     elif surplus_or_deficit < 0:
-        st.write(f"You have a monthly deficit of $ :red[{surplus_or_deficit}]")
+        st.write(f"You have a monthly deficit of $ :red[{surplus_or_deficit:.2f}]")
 
     graphCol1, graphCol2 = st.columns(2)
 
@@ -158,7 +158,7 @@ elif option == "Budgeting":
         remaining_funds = px.pie(
             names=["Expenses", "Remaining Funds", "Savings"],
             values=[surplus_or_deficit, monthly_expenses, monthly_savings],
-            color_discrete_sequence=["red", "green", "blue"],
+            color_discrete_sequence=["green", "red", "blue"],
             title="Remaining Funds Breakdown"
         )
 
@@ -263,7 +263,8 @@ elif option == "Debt Management":
                     )
                     if time_to_pay_off_updated < 0:
                         st.write(
-                            f"{debt_name}: :red[You will not be able to pay off the debt at this rate, consider increasing monthly payments]")
+                            f"{debt_name}: :red[You will not be able to pay off the debt at this rate, "
+                            f"consider increasing monthly payments]")
                     else:
                         st.write(f"{debt_name}: Pay Off in :green[{time_to_pay_off_updated} months]")
 
