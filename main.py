@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
 st.set_page_config(
     page_title="My Personal Finance App!",
@@ -38,6 +39,7 @@ def calculate_time_to_pay_off(initial_debt, interest_rate, monthly_payment):
     n = -math.log(1 - (initial_debt * monthly_interest_rate) / monthly_payment) / math.log(1 + monthly_interest_rate)
     return int(n)
 
+
 def calculate_time_to_pay_off_with_extra_payment(initial_debt, interest_rate, monthly_payment, extra_payment):
     initial_debt = float(initial_debt)
     interest_rate = float(interest_rate)
@@ -57,6 +59,23 @@ def calculate_time_to_pay_off_with_extra_payment(initial_debt, interest_rate, mo
 
     n = -math.log(1 - (initial_debt * monthly_interest_rate) / (monthly_payment + extra_payment)) / math.log(1 + monthly_interest_rate)
     return int(n)
+
+
+def calculate_debt_over_time(initial_debt, interest_rate, monthly_payment, max_months=120):
+    monthly_interest_rate = interest_rate / 12 / 100
+    debt_remaining = initial_debt
+    monthly_debt_progress = []
+
+    for month in range(max_months):
+        if debt_remaining <= 0:
+            break
+
+        interest_for_month = debt_remaining * monthly_interest_rate
+        debt_remaining = debt_remaining + interest_for_month - monthly_payment
+        monthly_debt_progress.append(max(debt_remaining, 0))  # Ensure debt doesn't go below zero
+
+    return monthly_debt_progress
+
 
 if option == "Home":
     st.title("My Personal Finance App!")
@@ -237,17 +256,50 @@ elif option == "Debt Management":
     st.session_state.total_debt = sum(st.session_state.total_amounts.values())
     st.subheader(f"Total Debt Amount: $:red[{st.session_state.total_debt:.2f}]")
 
+    if st.session_state.debts:
+        st.subheader("Debt Repayment Progress Over Time")
+
+        debt_progress_data = {}  # Dictionary to hold progress data for each debt
+
+        for debt in st.session_state.debts:
+            debt_name = debt["Debt Name"]
+            initial_debt = debt["Initial Debt"]
+            interest_rate = debt["Interest Rate"]
+            monthly_payment = debt["Minimum Monthly Payment"]
+
+            monthly_progress = calculate_debt_over_time(initial_debt, interest_rate, monthly_payment)
+            debt_progress_data[debt_name] = monthly_progress
+
+        # Plotting all debts on the same graph
+        fig = go.Figure()
+        for debt_name, progress in debt_progress_data.items():
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(progress) + 1)),
+                y=progress,
+                mode='lines',
+                name=debt_name,
+                hovertemplate='Month: %{x}<br>Remaining Debt: $%{y:.2f}<extra></extra>'  # Custom hover label
+            ))
+
+        fig.update_layout(
+            title="Debt Repayment Progress Over Time",
+            xaxis_title="Month",
+            yaxis_title="Remaining Debt ($)",
+            legend_title="Debts"
+        )
+
+        st.plotly_chart(fig)
 
 
     st.header("Additional Payments to Pay Off Debts Faster")
     with st.form("extra_payment_form"):
-        extra_payment = st.number_input("Enter Extra Payment Amount $", value=0.0, min_value=0.0)
+        extra_payment = st.number_input("Enter Extra Monthly Payment Amount $", value=0.0, min_value=0.0)
         add_extra_payment = st.form_submit_button("Add Extra Payment")
 
         if add_extra_payment:
             if extra_payment > 0:
                 st.session_state.total_debt -= extra_payment
-                st.write(f"New Total Debt Amount After Extra Payment: ${st.session_state.total_debt:.2f}")
+                st.write(f"New Total Debt Amount After Extra Monthly Payments: ${st.session_state.total_debt:.2f}")
 
                 # Update the time frame after the extra payment
                 st.subheader("Updated Time Frames:")
@@ -278,7 +330,8 @@ elif option == "Debt Management":
                 total_time_to_pay_off = calculate_time_to_pay_off(
                     st.session_state.total_debt, 0, total_payment_amount
                 )
-                st.write(f"Total Debt Pay Off in :green[{total_time_to_pay_off} months]")
+
+
 
 
 
