@@ -1,7 +1,7 @@
 # Personal_Finance_Web_App
 A web app focused on creating quick budgets, analyzing how quickly debt can be payed, and looking at stocks.
 
-##"Budget" focuses on creating a quick budget based on a person's yearly salary. Accounts for taxes, expenses, debts and savings.
+"Budget" focuses on creating a quick budget based on a person's yearly salary. Accounts for taxes, expenses, debts and savings.
 After the user adds all their expenses, they'll be able to see if they have a surplus or deficit of their income. 
 Expenses and remaining balanced are visually displayed as graphs to give the user a better comprehension of their spending.
 
