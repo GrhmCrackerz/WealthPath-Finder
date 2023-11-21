@@ -1,3 +1,4 @@
+import json
 import math
 import streamlit as st
 import yfinance as yf
@@ -5,6 +6,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from alpha_vantage.timeseries import TimeSeries
 
 st.set_page_config(
     page_title="My Personal Finance App!",
@@ -185,7 +187,34 @@ elif option == "Budgeting":
 
 
 elif option == "Investing":
-    st.text("Here we are going to learn the basics about investing")
+    st.title("Investing")
+    st.text("Explore Stocks, Index Funds, and ETFs for Investing")
+
+    # Load API key and create TimeSeries object
+    file = open("api_key.json")
+    json_file = json.load(file)
+    api_key = json_file["vantage_api"]
+    ts = TimeSeries(key=api_key, output_format='pandas')
+
+    ticker_symbol = st.text_input("Enter a Ticker Symbol (e.g., AAPL, MSFT, SPY):")
+
+    if ticker_symbol:
+        try:
+            # Fetch data using Alpha Vantage
+            data, meta_data = ts.get_daily(symbol=ticker_symbol, outputsize='compact')
+
+            st.subheader(f"Displaying Stock Information for {ticker_symbol.upper()}")
+            st.write(data.tail())  # Display the last few rows of the data
+
+            # Plotting the stock's closing price using Plotly
+            fig = px.line(data, y='4. close', title=f'Closing Prices for {ticker_symbol.upper()}')
+            fig.update_xaxes(title_text='Date')
+            fig.update_yaxes(title_text='Closing Price (USD)')
+            st.plotly_chart(fig)
+
+        except Exception as e:
+            st.error(f"Failed to retrieve data for {ticker_symbol}: {e}")
+
 
 elif option == "Debt Management":
     st.title("Debt Management")
