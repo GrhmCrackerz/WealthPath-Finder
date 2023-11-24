@@ -123,23 +123,36 @@ elif option == "Budgeting":
     st.header("**Monthly Expenses**")
     colExpenses1, colExpenses2 = st.columns(2)
 
+    error_flag = False
+
     with colExpenses1:
         st.subheader("Monthly Rent")
-        monthly_rent = st.number_input(
-            "Enter your monthly rent($): ", min_value=0.0, format='%f')
+        monthly_rent = st.number_input("Enter your monthly rent($): ", min_value=0.0, format='%f')
+        if monthly_rent < 0:
+            st.error("Monthly rent cannot be negative.")
+            error_flag = True
 
         st.subheader("Monthly Utilities")
         monthly_utilities = st.number_input(
             "Enter your monthly expenses on utilities ($): ", min_value=0.0, format='%f')
+        if monthly_utilities < 0:
+            st.error("Monthly utilities cannot be negative.")
+            error_flag = True
 
         st.subheader("Savings")
         monthly_savings = st.number_input(
             "Enter your monthly contributions towards savings: ", min_value=0.0, format='%f')
+        if monthly_savings < 0:
+            st.error("Monthly savings cannot be negative.")
+            error_flag = True
 
         st.subheader("Monthly Bills")
         st.text("Include here one time bills such as, Car Insurance, Streaming subscriptions, etc")
         monthly_bills = st.number_input(
             "Enter the total that goes towards bills: ", min_value=0.0, format='%f')
+        if monthly_bills < 0:
+            st.error("Monthly bills cannot be negative.")
+            error_flag = True
 
     with colExpenses2:
 
@@ -147,24 +160,37 @@ elif option == "Budgeting":
         weekly_groceries = st.number_input(
             "Enter your weekly expenses on groceries: ", min_value=0.0, format='%f')
         weekly_groceries = weekly_groceries * 4
+        if weekly_groceries < 0:
+            st.error("Weekly groceries cannot be negative.")
+            error_flag = True
 
         st.subheader("Entertainment")
         weekly_entertainment = st.number_input(
             "Enter your weekly expenses on entertainment: ", min_value=0.0, format='%f')
         weekly_entertainment = weekly_entertainment * 4
+        if weekly_entertainment < 0:
+            st.error("Weekly entertainment cannot be negative.")
+            error_flag = True
 
         st.subheader("Transportation")
         weekly_transport = st.number_input(
             "Enter your weekly expenses on transportation: ", min_value=0.0, format='%f')
+        if weekly_transport < 0:
+            st.error("Weekly transport cannot be negative.")
+            error_flag = True
 
         st.subheader("Buffer")
         weekly_buffer = st.number_input(
             "Enter a weekly buffer for unexpected expenses: ", min_value=0.0, format='%f')
+        if weekly_buffer < 0:
+            st.error("Weekly buffer cannot be negative.")
+            error_flag = True
 
-    monthly_expenses = monthly_rent + monthly_utilities + monthly_bills
-    weekly_expenses = weekly_groceries + weekly_entertainment + weekly_transport + weekly_buffer
+    if not error_flag:
+        monthly_expenses = monthly_rent + monthly_utilities + monthly_bills
+        weekly_expenses = weekly_groceries + weekly_entertainment + weekly_transport + weekly_buffer
 
-    surplus_or_deficit = monthly_takehome_salary - (monthly_expenses + weekly_expenses + monthly_savings)
+        surplus_or_deficit = monthly_takehome_salary - (monthly_expenses + weekly_expenses + monthly_savings)
 
     if surplus_or_deficit > 0:
         st.write(f"You have a monthly surplus of $ :green[{surplus_or_deficit:.2f}]")
@@ -261,15 +287,23 @@ elif option == "Debt Management":
         line_color = st.color_picker("Pick a Color for the Debt Line", '#00f900')  # Default color as an example
 
         if add_debt:
-            if debt_name:
-                new_debt = {
-                    "Debt Name": debt_name,
-                    "Interest Rate": interest_rate,
-                    "Minimum Monthly Payment": min_monthly_payment,
-                    "Loan Length": loan_length,
-                    "Initial Debt": initial_debt
-                }
-                new_debt['Line Color'] = line_color
+            error_flag = False
+
+            # Input validation
+            if initial_debt < 0:
+                st.error("Initial debt amount cannot be negative.")
+                error_flag = True
+            if min_monthly_payment < 0:
+                st.error("Minimum monthly payment cannot be negative.")
+                error_flag = True
+            if interest_rate < 0 or interest_rate > 100:
+                st.error("Interest rate must be between 0% and 100%.")
+                error_flag = True
+
+            if not error_flag and debt_name:
+                new_debt = {"Debt Name": debt_name, "Interest Rate": interest_rate,
+                            "Minimum Monthly Payment": min_monthly_payment, "Loan Length": loan_length,
+                            "Initial Debt": initial_debt, 'Line Color': line_color}
                 st.session_state.debts.append(new_debt)
 
                 # Update the total amount owed for this specific form of debt
